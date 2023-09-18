@@ -1,0 +1,39 @@
+import requests
+
+# URL de autenticação
+login_url = 'https://www.qualquer_site.com.br/'
+
+# Dados de autenticação (substitua pelos valores corretos)
+payload = {
+    'username': 'seu_usuario',
+    'password': 'sua_senha',
+    'csrfmiddlewaretoken': 'valor_do_token_csrf',
+    # Adicione outros campos necessários para a autenticação
+}
+
+# Realiza a autenticação
+with requests.Session() as session:
+    # Primeira solicitação para obter o token CSRF
+    response = session.get(login_url)
+    csrfmiddlewaretoken = response.cookies['csrftoken']
+
+    # Atualiza o token CSRF no payload
+    payload['csrfmiddlewaretoken'] = csrfmiddlewaretoken
+
+    # Envia a solicitação de autenticação
+    auth_response = session.post(login_url, data=payload)
+
+    # Verifica se a autenticação foi bem-sucedida (verifique os cookies ou conteúdo da página)
+    if 'Bem-vindo' in auth_response.text:
+        print('Autenticação bem-sucedida!')
+        # A partir daqui, você pode continuar explorando o site autenticado
+
+        # Por exemplo, acesse a página após o login
+        protected_page_url = 'https://www.enel.com.br/pagina_protegida.html'
+        protected_page_response = session.get(protected_page_url)
+
+        # Você pode verificar se a página protegida foi acessada com sucesso
+        if 'Conteúdo da página protegida' in protected_page_response.text:
+            print('Página protegida acessada com sucesso!')
+    else:
+        print('Autenticação falhou.')
